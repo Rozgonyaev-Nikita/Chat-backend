@@ -60,22 +60,29 @@ mongoose
   .catch((err) => console.log(err));
 
 // Schema for posts of app
-const PostSchema = new mongoose.Schema({
-  title: {
+const MessageSchema = new mongoose.Schema({
+  room: {
     type: String,
     required: true,
   },
-  body: {
-    type: String,
-    //required: true,
-    default: "netu",
-    // unique: true,
-  },
-  date: {
-    type: Date,
-    default: Date.now,
-  },
+  messages: [
+    {
+      name: {
+        type: String,
+        required: true,
+      },
+      text: {
+        type: String,
+        required: true,
+      },
+      date: {
+        type: Date,
+        default: Date.now,
+      },
+    },
+  ],
 });
+
 const UserSchema = new mongoose.Schema({
   login: {
     type: String,
@@ -92,7 +99,7 @@ const UserSchema = new mongoose.Schema({
     },
   ],
 });
-const Posts = mongoose.model("karp", PostSchema); //posts
+const Messages = mongoose.model("messages", MessageSchema); //posts
 const Users = mongoose.model("users", UserSchema);
 async function cazan() {
   const posts = await Posts.find();
@@ -147,7 +154,7 @@ app.post("/api/users/rooms", (req, res) => {
     if (user) {
       user.rooms.push(room); // Добавление значения комнаты в массив rooms
       let result = await user.save();
-      console.log(result);
+      // console.log(result);
     } else {
       res.status(404).json({ error: "Пользователь не найден" });
     }
@@ -157,11 +164,28 @@ app.post("/api/users/rooms", (req, res) => {
     if (user) {
       user.rooms.push(room); // Добавление значения комнаты в массив rooms
       let result = await user.save();
-      console.log(result);
+      // console.log(result);
     } else {
       res.status(404).json({ error: "Пользователь не найден" });
     }
   });
+});
+
+app.post("/api/createChat", async (req, res) => {
+  try {
+    console.log("createChat");
+    const message = new Messages(req.body);
+    let result = await message.save();
+    result = result.toObject();
+    if (result) {
+      res.send(result); // Отправляем результат, а не исходное тело запроса
+    } else {
+      console.log("Posts already register");
+    }
+  } catch (e) {
+    console.error(e); // Выводим ошибку в консоль для отладки
+    res.status(500).send("Something Went Wrong"); // Отправляем статус ошибки и сообщение на клиент
+  }
 });
 
 io.on("connection", (socket) => {
@@ -173,9 +197,24 @@ io.on("connection", (socket) => {
   socket.on("join", (room) => {
     socket.join(room);
     console.log("Вход");
-    socket.on("chat message", (msg) => {
+    socket.on("chat message", async (msg) => {
       // console.log("message: " + msg);
       io.to(room).emit("message", msg);
+      console.log(msg);
+
+      try {
+        Messages.findOne({ room }).then(async (message) => {
+          if (message) {
+            message.messages.push(msg);
+            await message.save();
+            console.log("Запись успешно добавлена в базу данных");
+          } else {
+            console.log("Такой записи нет!");
+          }
+        });
+      } catch (error) {
+        console.error("Не удалось добавить запись в базу данных:", error);
+      }
     });
   });
 });
