@@ -145,42 +145,67 @@ app.get("/api/getUser", ({ query: { login, password } }, res) => {
   console.log(login, password);
 });
 
-app.post("/api/users/rooms", (req, res) => {
-  const { myLogin, hisLogin, room } = req.body; // Получение ID пользователя из URL
-  // const { room } = req.body; // Получение значения комнаты из тела запроса
-  console.log(myLogin, hisLogin, room);
-
-  Users.findOne({ login: myLogin }).then(async (user) => {
-    if (user) {
-      user.rooms.push(room); // Добавление значения комнаты в массив rooms
-      let result = await user.save();
-      // console.log(result);
+app.get("/api/getMessages", ({ query: { room } }, res) => {
+  Messages.findOne({ room }).then((message) => {
+    if (message !== null) {
+      res.json(message);
+      // console.log(user)
+      // res.json(true);
     } else {
-      res.status(404).json({ error: "Пользователь не найден" });
-    }
-  });
-
-  Users.findOne({ login: hisLogin }).then(async (user) => {
-    if (user) {
-      user.rooms.push(room); // Добавление значения комнаты в массив rooms
-      let result = await user.save();
-      // console.log(result);
-    } else {
-      res.status(404).json({ error: "Пользователь не найден" });
+      res.json(false);
     }
   });
 });
 
-app.post("/api/createChat", async (req, res) => {
+app.post("/api/users/rooms", async (req, res) => {
+  const { myLogin, hisLogin, room } = req.body; // Получение ID пользователя из URL
+  // const { room } = req.body; // Получение значения комнаты из тела запроса
+  console.log(myLogin, hisLogin, room);
+
+  const isIt = await Messages.findOne({ room });
+
   try {
-    console.log("createChat");
-    const message = new Messages(req.body);
-    let result = await message.save();
-    result = result.toObject();
-    if (result) {
-      res.send(result); // Отправляем результат, а не исходное тело запроса
+    if (!isIt) {
+      let myLoginUser = await Users.findOne({ login: myLogin });
+      let hisLoginUser = await Users.findOne({ login: hisLogin });
+
+      if (myLoginUser && hisLoginUser) {
+        console.log("new room");
+
+        myLoginUser.rooms.push(room);
+        await myLoginUser.save();
+
+        hisLoginUser.rooms.push(room);
+        await hisLoginUser.save();
+
+        res.status(200).json({ message: "Комната добавлена" });
+      } else {
+        res.status(404).json({ error: "Пользователь не найден" });
+      }
     } else {
-      console.log("Posts already register");
+      res.status(500).send("Такая комната уже существует!");
+    }
+  } catch (error) {
+    res.status(500).json({ error: "Ошибка сервера" });
+  }
+});
+
+app.post("/api/createChat", async (req, res) => {
+  const room = req.body.room;
+  try {
+    const isIt = await Messages.findOne({ room });
+    if (!isIt) {
+      console.log("createChat");
+      const message = new Messages(req.body);
+      let result = await message.save();
+      result = result.toObject();
+      if (result) {
+        res.send(result); // Отправляем результат, а не исходное тело запроса
+      } else {
+        console.log("Posts already register");
+      }
+    } else {
+      res.status(500).send("Такая комната уже существует!");
     }
   } catch (e) {
     console.error(e); // Выводим ошибку в консоль для отладки
@@ -200,7 +225,7 @@ io.on("connection", (socket) => {
     socket.on("chat message", async (msg) => {
       // console.log("message: " + msg);
       io.to(room).emit("message", msg);
-      console.log(msg);
+      console.log("msg", msg);
 
       try {
         Messages.findOne({ room }).then(async (message) => {
