@@ -14,11 +14,14 @@ const io = new Server(server, {
 });
 
 mongoose
-  .connect("mongodb://127.0.0.1:27017/", {
-    dbName: "chat",
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
+  .connect(
+    "mongodb+srv://dbKarp:MZFgZ3cPMP2uxHsM@atlascluster.swjds7w.mongodb.net/?retryWrites=true&w=majority",
+    {
+      dbName: "CHAT",
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    }
+  )
   .then(() => console.log("Connected to yourDB-name database"))
   .catch((err) => console.log(err));
 
