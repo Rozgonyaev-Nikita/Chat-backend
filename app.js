@@ -1,40 +1,3 @@
-// const express = require("express");
-// const app = express();
-// const http = require("http");
-// const server = http.createServer(app);
-// const { Server } = require("socket.io");
-// const io = new Server(server, {
-//   cors: {
-//     origin: "*",
-//     methods: ["GET", "POST"],
-//     allowedHeaders: ["my-custom-header"],
-//     credentials: true,
-//   },
-// });
-// const cors = require("cors");
-
-// app.use(cors({ origin: "*" }));
-
-// app.get("/", (req, res) => {
-//   res.send("kl");
-// });
-
-// io.on("connection", (socket) => {
-//   console.log("a user connected");
-//   socket.on("chat message", (msg) => {
-//     // console.log("message: " + msg);
-//     io.to("kl").emit("message", msg);
-//   });
-//   socket.on("join", (room) => {
-//     socket.join(room);
-//     console.log("Вход");
-//   });
-// });
-
-// server.listen(5000, () => {
-//   console.log("listening on *:5000");
-// });
-
 const mongoose = require("mongoose");
 const express = require("express");
 const app = express();
@@ -151,6 +114,17 @@ app.get("/api/getMessages", ({ query: { room } }, res) => {
       res.json(message);
       // console.log(user)
       // res.json(true);
+    } else {
+      res.json(false);
+    }
+  });
+});
+app.get("/api/lastMessage", ({ query: { room } }, res) => {
+  Messages.findOne({ room }).then((message) => {
+    if (message !== null) {
+      // res.json(message);
+      const lastMessage = message.messages[message.messages.length - 1];
+      res.json(lastMessage);
     } else {
       res.json(false);
     }
