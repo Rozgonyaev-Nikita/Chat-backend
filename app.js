@@ -167,6 +167,29 @@ app.post("/api/users/rooms", async (req, res) => {
   }
 });
 
+app.post("/api/users/roomsAdd", async (req, res) => {
+  const { hisLogin, room } = req.body; // Получение ID пользователя из URL
+  // const { room } = req.body; // Получение значения комнаты из тела запроса
+  console.log(hisLogin, room);
+
+  try {
+    let newUserLogin = await Users.findOne({ login: hisLogin });
+
+    if (newUserLogin) {
+      console.log("new room");
+
+      newUserLogin.rooms.push(room);
+      await newUserLogin.save();
+
+      res.status(200).json({ message: "Комната добавлена" });
+    } else {
+      res.status(404).json({ error: "Пользователь не найден" });
+    }
+  } catch (error) {
+    res.status(500).json({ error: "Ошибка сервера" });
+  }
+});
+
 app.post("/api/createChat", async (req, res) => {
   const room = req.body.room;
   try {
