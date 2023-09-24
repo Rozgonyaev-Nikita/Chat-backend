@@ -31,6 +31,11 @@ const MessageSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  users: [
+    {
+      type: String,
+    },
+  ],
   messages: [
     {
       name: {
@@ -122,6 +127,17 @@ app.get("/api/getMessages", ({ query: { room } }, res) => {
     }
   });
 });
+app.get("/api/getUsersInRoom", ({ query: { room } }, res) => {
+  Messages.findOne({ room }).then((message) => {
+    if (message !== null) {
+      res.json(message);
+      // console.log(user)
+      // res.json(true);
+    } else {
+      res.json(false);
+    }
+  });
+});
 app.get("/api/lastMessage", ({ query: { room } }, res) => {
   Messages.findOne({ room }).then((message) => {
     if (message !== null) {
@@ -139,10 +155,10 @@ app.post("/api/users/rooms", async (req, res) => {
   // const { room } = req.body; // Получение значения комнаты из тела запроса
   console.log(myLogin, hisLogin, room);
 
-  const isIt = await Messages.findOne({ room });
+  const messages = await Messages.findOne({ room });
 
   try {
-    if (!isIt) {
+    if (!messages) {
       let myLoginUser = await Users.findOne({ login: myLogin });
       let hisLoginUser = await Users.findOne({ login: hisLogin });
 
@@ -154,6 +170,10 @@ app.post("/api/users/rooms", async (req, res) => {
 
         hisLoginUser.rooms.push(room);
         await hisLoginUser.save();
+
+        messages.users.push(myLogin);
+        messages.users.push(hisLogin);
+        await messages.save();
 
         res.status(200).json({ message: "Комната добавлена" });
       } else {
@@ -167,12 +187,13 @@ app.post("/api/users/rooms", async (req, res) => {
   }
 });
 
-app.post("/api/users/roomsAdd", async (req, res) => {
+app.post("/api/usersInRoomsAdd", async (req, res) => {
   const { hisLogin, room } = req.body; // Получение ID пользователя из URL
   // const { room } = req.body; // Получение значения комнаты из тела запроса
   console.log(hisLogin, room);
 
   try {
+    const messages = await Messages.findOne({ room });
     let newUserLogin = await Users.findOne({ login: hisLogin });
 
     if (newUserLogin) {
@@ -180,6 +201,9 @@ app.post("/api/users/roomsAdd", async (req, res) => {
 
       newUserLogin.rooms.push(room);
       await newUserLogin.save();
+
+      messages.users.push(room);
+      await messages.save();
 
       res.status(200).json({ message: "Комната добавлена" });
     } else {
