@@ -202,7 +202,7 @@ app.post("/api/usersInRoomsAdd", async (req, res) => {
       newUserLogin.rooms.push(room);
       await newUserLogin.save();
 
-      messages.users.push(room);
+      messages.users.push(hisLogin);
       await messages.save();
 
       res.status(200).json({ message: "Комната добавлена" });
