@@ -171,10 +171,6 @@ app.post("/api/users/rooms", async (req, res) => {
         hisLoginUser.rooms.push(room);
         await hisLoginUser.save();
 
-        messages.users.push(myLogin);
-        messages.users.push(hisLogin);
-        await messages.save();
-
         res.status(200).json({ message: "Комната добавлена" });
       } else {
         res.status(404).json({ error: "Пользователь не найден" });
@@ -215,13 +211,16 @@ app.post("/api/usersInRoomsAdd", async (req, res) => {
 });
 
 app.post("/api/createChat", async (req, res) => {
-  const room = req.body.room;
+  const { room, myLogin, hisLogin } = req.body;
+
   try {
     const isIt = await Messages.findOne({ room });
     if (!isIt) {
       console.log("createChat");
-      const message = new Messages(req.body);
-      let result = await message.save();
+      const messages = new Messages(req.body);
+      messages.users.push(myLogin);
+      messages.users.push(hisLogin);
+      let result = await messages.save();
       result = result.toObject();
       if (result) {
         res.send(result); // Отправляем результат, а не исходное тело запроса
